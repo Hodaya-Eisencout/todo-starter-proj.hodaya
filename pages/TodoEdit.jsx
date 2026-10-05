@@ -1,5 +1,10 @@
 import { todoService } from "../services/todo.service.js"
 import { showErrorMsg, showSuccessMsg } from "../services/event-bus.service.js"
+import {
+    store,
+    ADD_TODO,
+    UPDATE_TODO,
+} from "../store/store.js"
 
 const { useState, useEffect } = React
 const { useNavigate, useParams } = ReactRouterDOM
@@ -38,15 +43,27 @@ export function TodoEdit() {
                 break
         }
 
-        setTodoToEdit(prevTodoToEdit => ({ ...prevTodoToEdit, [field]: value }))
+        setTodoToEdit(prevTodoToEdit => ({
+            ...prevTodoToEdit,
+            [field]: value,
+        }))
     }
 
     function onSaveTodo(ev) {
         ev.preventDefault()
+
+        const isEdit = !!todoToEdit._id
+
         todoService.save(todoToEdit)
-            .then((savedTodo) => {
-                navigate('/todo')
+            .then(savedTodo => {
+
+                store.dispatch({
+                    type: isEdit ? UPDATE_TODO : ADD_TODO,
+                    todo: savedTodo,
+                })
+
                 showSuccessMsg(`Todo Saved (id: ${savedTodo._id})`)
+                navigate('/todo')
             })
             .catch(err => {
                 showErrorMsg('Cannot save todo')
@@ -54,20 +71,47 @@ export function TodoEdit() {
             })
     }
 
-    const { txt, importance, isDone } = todoToEdit
+    const { txt, importance, isDone, color } = todoToEdit
 
     return (
         <section className="todo-edit">
-            <form onSubmit={onSaveTodo} >
+            <form onSubmit={onSaveTodo}>
+
                 <label htmlFor="txt">Text:</label>
-                <input onChange={handleChange} value={txt} type="text" name="txt" id="txt" />
+                <input
+                    onChange={handleChange}
+                    value={txt}
+                    type="text"
+                    name="txt"
+                    id="txt"
+                />
 
                 <label htmlFor="importance">Importance:</label>
-                <input onChange={handleChange} value={importance} type="number" name="importance" id="importance" />
+                <input
+                    onChange={handleChange}
+                    value={importance}
+                    type="number"
+                    name="importance"
+                    id="importance"
+                />
 
                 <label htmlFor="isDone">isDone:</label>
-                <input onChange={handleChange} value={isDone} type="checkbox" name="isDone" id="isDone" />
+                <input
+                    onChange={handleChange}
+                    checked={isDone}
+                    type="checkbox"
+                    name="isDone"
+                    id="isDone"
+                />
 
+                <label htmlFor="color">Color:</label>
+                <input
+                    onChange={handleChange}
+                    value={color || '#ffffff'}
+                    type="color"
+                    name="color"
+                    id="color"
+                />
 
                 <button>Save</button>
             </form>
